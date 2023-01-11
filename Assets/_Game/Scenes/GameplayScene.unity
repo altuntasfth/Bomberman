@@ -326,11 +326,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   baseLevelData: {fileID: 11400000, guid: 8575893b70e704cd492d6a6c462c3bc0, type: 2}
+  mainCamera: {fileID: 963194227}
   gridsParent: {fileID: 1531597660}
   cellPrefab: {fileID: 5879688002533837517, guid: 8aa665a5b244747d4bdba4d3038ae035, type: 3}
   brickPrefab: {fileID: 5306754230219147557, guid: 25ae82f49f49b47afbcd62c3d94cd90d, type: 3}
+  bombPrefab: {fileID: 5236051526101065141, guid: 25b81613f78d14560a974d5ee97aaad7, type: 3}
+  minimumBombCount: 0
   levelTMP: {fileID: 424662036}
   bombCountTMP: {fileID: 971407539}
+  levelData: 
 --- !u!4 &484690419
 Transform:
   m_ObjectHideFlags: 0
@@ -492,7 +496,7 @@ Camera:
   near clip plane: 0.3
   far clip plane: 1000
   field of view: 60
-  orthographic: 0
+  orthographic: 1
   orthographic size: 5
   m_Depth: -1
   m_CullingMask:

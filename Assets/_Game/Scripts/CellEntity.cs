@@ -1,9 +1,11 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace _Game.Scripts
 {
-    public class CellEntity : MonoBehaviour
+    public class CellEntity : Grid
     {
-        
+        public bool isUsedForCalculation;
+        public List<CellEntity> neighborCellsList;
     }
 }
