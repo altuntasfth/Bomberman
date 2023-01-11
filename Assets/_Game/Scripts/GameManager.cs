@@ -10,6 +10,9 @@ namespace _Game.Scripts
     public class GameManager : MonoBehaviour
     {
         [SerializeField] private BaseLevelDataSO baseLevelData;
+        [SerializeField] private Transform gridsParent;
+        [SerializeField] private GameObject cellPrefab;
+        [SerializeField] private GameObject brickPrefab;
 
         [Header("UI")] [Space(10)] 
         [SerializeField] private TextMeshProUGUI levelTMP;
@@ -17,7 +20,7 @@ namespace _Game.Scripts
         
         private int levelIndex;
         private int normalizedLevelIndex;
-        private string levelData;
+        public string levelData;
         private int[,] levelDataMatrix;
         private int rowCount;
         private int columnCount;
@@ -35,6 +38,7 @@ namespace _Game.Scripts
             GetLevelDataFromResources();
             GetLevelDataRowAndColumnCount();
             WriteLevelDataToMatrix();
+            GenerateGrids();
         }
 
         public void OnClickExitButton()
@@ -92,12 +96,45 @@ namespace _Game.Scripts
         private void WriteLevelDataToMatrix()
         {
             levelDataMatrix = new int[rowCount, columnCount];
-
+            int index = 0;
             for (int i = 0; i < rowCount; i++)
             {
                 for (int j = 0; j < columnCount; j++)
                 {
-                    levelDataMatrix[i, j] = levelData[i * 2 * rowCount + j * 2];
+                    levelDataMatrix[i, j] = levelData[index] - '0';
+                    index += 2;
+                }
+            }
+        }
+
+        private void GenerateGrids()
+        {
+            float scaleFactor = brickPrefab.transform.localScale.x;
+            Vector3 initialPosition = -(columnCount + scaleFactor / 2f) * Vector3.right +
+                                      (rowCount + scaleFactor / 2f) * Vector3.up;
+            Vector3 position = initialPosition;
+            
+            for (int i = 0; i < rowCount; i++)
+            {
+                position = position.x * Vector3.right +
+                           (initialPosition.y - (i * 3)) * Vector3.up;
+                
+                for (int j = 0; j < columnCount; j++)
+                {
+                    int gridValue = levelDataMatrix[i, j];
+                    position = (initialPosition.x + (j * 3)) * Vector3.right +
+                               position.y * Vector3.up;
+
+                    if (gridValue == 0)
+                    {
+                        CellEntity cell = Instantiate(cellPrefab, position, Quaternion.identity, gridsParent)
+                            .GetComponent<CellEntity>();
+                    }
+                    else
+                    {
+                        BrickEntity brick = Instantiate(brickPrefab, position, Quaternion.identity, gridsParent)
+                            .GetComponent<BrickEntity>();
+                    }
                 }
             }
         }
