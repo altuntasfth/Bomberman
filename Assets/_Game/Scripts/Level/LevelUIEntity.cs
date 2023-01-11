@@ -38,6 +38,11 @@ namespace _Game.Scripts.Level
                 SceneManager.LoadScene("GameplayScene");
             });
             
+            for (var i = 0; i < levelData.earnedStarsCount; i++)
+            {
+                starsParent.transform.GetChild(i).GetComponent<Image>().color = Color.white;
+            }
+            
             playButton.GetComponent<Image>().sprite =
                 levelData.isReadyToPlay == true ? enabledPlayButtonSprite : disabledPlayButtonSprite;
             playButtonTMP.text = levelData.isReadyToPlay == true ? "PLAY" : "LOCKED";

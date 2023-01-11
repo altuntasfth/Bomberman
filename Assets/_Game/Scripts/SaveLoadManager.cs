@@ -24,12 +24,11 @@ namespace _Game.Scripts
             }
         }
 
-        public void Save(LevelData levelData, int levelNumber)
+        public void Save(AllLevelsData data, LevelData levelData, int levelNumber)
         {
             BinaryFormatter bf = new BinaryFormatter();
-            FileStream file = File.Open(Application.persistentDataPath + fileName, FileMode.Open);
+            FileStream file = File.Create(Application.persistentDataPath + fileName);
 
-            AllLevelsData data = (AllLevelsData)bf.Deserialize(file);
             if (levelNumber < data.allLevelsData.Count)
             {
                 data.allLevelsData[levelNumber] = levelData;

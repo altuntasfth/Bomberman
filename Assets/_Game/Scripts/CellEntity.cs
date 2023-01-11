@@ -7,6 +7,8 @@ namespace _Game.Scripts
     {
         public bool isUsedForCalculation;
         public bool isOptimumPointForBomDrop;
+        public bool isExploded;
+        public BombEntity bombOnCell;
         public List<CellEntity> neighborCellsList;
     }
 }

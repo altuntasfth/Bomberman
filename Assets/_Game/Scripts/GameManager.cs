@@ -6,11 +6,13 @@ using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 namespace _Game.Scripts
 {
     public class GameManager : MonoBehaviour
     {
+        public AllLevelsData data;
         public Camera mainCamera;
         public PlayerMechanic player;
         public bool isGameStarted;
@@ -33,12 +35,14 @@ namespace _Game.Scripts
         [SerializeField] private GameObject starsParent;
 
         private int droppedBombCount;
+        private int earnedStarsCount;
         private int levelIndex;
         private int normalizedLevelIndex;
         public string levelData;
         private int[,] levelDataMatrix;
         private Grid[,] gridsDataMatrix;
         private List<CellEntity> cellsList;
+        private List<CellEntity> optimumCellsList;
         private List<BombEntity> optimumBombsList;
         private List<BombEntity> droppedBombsList;
         private int rowCount;
@@ -62,8 +66,11 @@ namespace _Game.Scripts
 
             optimumBombsList = new List<BombEntity>();
             droppedBombsList = new List<BombEntity>();
+            optimumCellsList = new List<CellEntity>();
 
             levelTMP.text = "Level-" + normalizedLevelIndex.ToString();
+            
+            data = SaveLoadManager.Instance.Load();
         }
         
         private void Start()
@@ -120,7 +127,14 @@ namespace _Game.Scripts
 
         public void OnClickExitButton()
         {
+            DOTween.KillAll();
             SceneManager.LoadScene("MenuScene");
+        }
+        
+        public void OnClickPlayAgainButton()
+        {
+            DOTween.KillAll();
+            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
         }
         
         private void GetLevelDataFromResources()
@@ -307,6 +321,7 @@ namespace _Game.Scripts
                     minimumBombCount++;
                     cellWithMaximumNeighbor.isUsedForCalculation = true;
                     cellWithMaximumNeighbor.isOptimumPointForBomDrop = true;
+                    optimumCellsList.Add(cellWithMaximumNeighbor);
                     
                     BombEntity bomb = Instantiate(bombPrefab,
                         cellWithMaximumNeighbor.transform.position - Vector3.forward, Quaternion.identity).GetComponent<BombEntity>();
@@ -328,6 +343,7 @@ namespace _Game.Scripts
         {
             for (var i = 0; i < optimumBombsList.Count; i++)
             {
+                optimumBombsList[i].GetComponent<SpriteRenderer>().color = new Color(1, 1, 1, 0.3f);
                 optimumBombsList[i].gameObject.SetActive(showOptimumBombs);
             }
         }
@@ -345,15 +361,126 @@ namespace _Game.Scripts
                     droppedBombsList.Add(bomb);
                     bombCountTMP.text = (minimumBombCount - droppedBombCount).ToString();
 
+                    cell.bombOnCell = bomb;
+                    
                     if (cell.isOptimumPointForBomDrop)
                     {
                         bomb.isInOptimumCell = true;
                     }
                 
                     cell.isUsed = true;
-                    Debug.Log("Drop bomb");
+
+                    if (IsAllOptimumCellsHasBomb())
+                    {
+                        ExplodeBombs();
+                    }
+
+                    if (droppedBombCount == minimumBombCount)
+                    {
+                        ExplodeBombs();
+                    }
                 }
             }
+        }
+
+        private void ExplodeBombs()
+        {
+            for (var i = 0; i < droppedBombsList.Count; i++)
+            {
+                BombEntity bomb = droppedBombsList[i];
+                bomb.Explode();
+            }
+            
+            earnedStarsCount = minimumBombCount - droppedBombCount + 1;
+            showOptimumBombs = false;
+            DebugOptimumBomb();
+            SaveCompletedLevelData();
+
+            DOVirtual.DelayedCall(1f, () =>
+            {
+                if (IsAllCellsExploded())
+                {
+                    HandleLevelComplete();
+                }
+                else
+                {
+                    HandleLevelFail();
+                }
+            });
+        }
+
+        private bool IsAllOptimumCellsHasBomb()
+        {
+            for (var i = 0; i < optimumCellsList.Count; i++)
+            {
+                CellEntity cell = optimumCellsList[i];
+
+                if (cell.bombOnCell == null)
+                {
+                    return false;
+                }
+            }
+            
+            return true;
+        }
+
+        private bool IsAllCellsExploded()
+        {
+            for (var i = 0; i < cellsList.Count; i++)
+            {
+                CellEntity cell = cellsList[i];
+
+                if (!cell.isExploded)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private void HandleLevelComplete()
+        {
+            isGameOver = true;
+            levelCompleteScreen.SetActive(true);
+            levelCompleteHeaderTMP.text = "CONGRATS!";
+
+            DOTween.KillAll();
+
+            if (earnedStarsCount - 1 < starsParent.transform.childCount)
+            {
+                for (var i = 0; i < earnedStarsCount; i++)
+                {
+                    starsParent.transform.GetChild(i).GetComponent<Image>().color = Color.white;
+                }
+            }
+        }
+
+        private void HandleLevelFail()
+        {
+            isGameOver = true;
+            levelCompleteScreen.SetActive(true);
+            levelCompleteHeaderTMP.text = "GAMEOVER!";
+
+            DOTween.KillAll();
+        }
+
+        private void SaveCompletedLevelData()
+        {
+            LevelData levelData = new LevelData()
+            {
+                levelIndex = levelIndex,
+                earnedStarsCount = earnedStarsCount,
+                isReadyToPlay = true,
+            };
+
+            data = SaveLoadManager.Instance.Load();
+            SaveLoadManager.Instance.Save(data, levelData, levelIndex);
+        }
+
+        private void UpdateOtherLevelsData()
+        {
+            //TODO: update all levels data
         }
     }
 }
