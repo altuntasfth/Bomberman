@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using _Game.Scripts.Level;
+using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -10,18 +11,28 @@ namespace _Game.Scripts
 {
     public class GameManager : MonoBehaviour
     {
+        public Camera mainCamera;
+        public PlayerMechanic player;
+        public bool isGameStarted;
+        public bool isGameOver;
+        public bool showOptimumBombs;
+        
         [SerializeField] private BaseLevelDataSO baseLevelData;
-        [SerializeField] private Camera mainCamera;
         [SerializeField] private Transform gridsParent;
         [SerializeField] private GameObject cellPrefab;
         [SerializeField] private GameObject brickPrefab;
         [SerializeField] private GameObject bombPrefab;
         [SerializeField] private int minimumBombCount;
+        [SerializeField] private float gridScaleAnimationDuration = 1f;
 
         [Header("UI")] [Space(10)] 
         [SerializeField] private TextMeshProUGUI levelTMP;
         [SerializeField] private TextMeshProUGUI bombCountTMP;
+        [SerializeField] private GameObject levelCompleteScreen;
+        [SerializeField] private TextMeshProUGUI levelCompleteHeaderTMP;
+        [SerializeField] private GameObject starsParent;
 
+        private int droppedBombCount;
         private int levelIndex;
         private int normalizedLevelIndex;
         public string levelData;
@@ -29,15 +40,28 @@ namespace _Game.Scripts
         private Grid[,] gridsDataMatrix;
         private List<CellEntity> cellsList;
         private List<BombEntity> optimumBombsList;
+        private List<BombEntity> droppedBombsList;
         private int rowCount;
         private int columnCount;
 
+        private void OnEnable()
+        {
+            player.DropBomb += OnDropBomb;
+        }
+
+        private void OnDisable()
+        {
+            player.DropBomb -= OnDropBomb;
+        }
+
         private void Awake()
         {
+            Application.targetFrameRate = 60;
             levelIndex = PlayerPrefs.GetInt("ActiveLevelIndex", 0);
             normalizedLevelIndex = levelIndex + 1;
 
             optimumBombsList = new List<BombEntity>();
+            droppedBombsList = new List<BombEntity>();
 
             levelTMP.text = "Level-" + normalizedLevelIndex.ToString();
         }
@@ -55,6 +79,11 @@ namespace _Game.Scripts
             CalculateMinimumBombCount();
             
             bombCountTMP.text = minimumBombCount.ToString();
+
+            DOVirtual.DelayedCall(gridScaleAnimationDuration + 0.5f, () =>
+            {
+                isGameStarted = true;
+            });
         }
 
         private void Update()
@@ -69,7 +98,7 @@ namespace _Game.Scripts
                 levelIndex = PlayerPrefs.GetInt("ActiveLevelIndex");
                 PlayerPrefs.SetInt("ActiveLevelIndex", Mathf.Clamp(levelIndex - 1, 0, baseLevelData.totalLevelCount - 1));
                 PlayerPrefs.Save();
-
+                DOTween.KillAll();
                 SceneManager.LoadScene(SceneManager.GetActiveScene().name);
             }
             
@@ -78,8 +107,14 @@ namespace _Game.Scripts
                 levelIndex = PlayerPrefs.GetInt("ActiveLevelIndex");
                 PlayerPrefs.SetInt("ActiveLevelIndex", Mathf.Clamp(levelIndex + 1, 0, baseLevelData.totalLevelCount - 1));
                 PlayerPrefs.Save();
-                
+                DOTween.KillAll();
                 SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+            }
+
+            if (Input.GetKeyDown(KeyCode.B))
+            {
+                showOptimumBombs = !showOptimumBombs;
+                DebugOptimumBomb();
             }
         }
 
@@ -151,6 +186,7 @@ namespace _Game.Scripts
 
         private void GenerateGrids()
         {
+            int index = 0;
             gridsDataMatrix = new Grid[rowCount, columnCount];
             cellsList = new List<CellEntity>();
             Vector3 initialPosition = -((columnCount * 3) / 2f - 1.5f) * Vector3.right +
@@ -172,6 +208,7 @@ namespace _Game.Scripts
                     {
                         CellEntity cell = Instantiate(cellPrefab, position, Quaternion.identity, gridsParent)
                             .GetComponent<CellEntity>();
+                        cell.transform.DOScale(Vector3.one, gridScaleAnimationDuration);
                         cell.name = "Cell_" + i + "," + j;
                         cell.isUsed = false;
 
@@ -182,10 +219,13 @@ namespace _Game.Scripts
                     {
                         BrickEntity brick = Instantiate(brickPrefab, position, Quaternion.identity, gridsParent)
                             .GetComponent<BrickEntity>();
+                        brick.transform.DOScale(Vector3.one, gridScaleAnimationDuration);
                         brick.isUsed = true;
                         brick.name = "Brick_" + i + "," + j;
                         gridsDataMatrix[i, j] = brick;
                     }
+
+                    index++;
                 }
             }
         }
@@ -266,8 +306,12 @@ namespace _Game.Scripts
 
                     minimumBombCount++;
                     cellWithMaximumNeighbor.isUsedForCalculation = true;
+                    cellWithMaximumNeighbor.isOptimumPointForBomDrop = true;
                     
-                    DebugOptimumBomb(cellWithMaximumNeighbor.transform.position);
+                    BombEntity bomb = Instantiate(bombPrefab,
+                        cellWithMaximumNeighbor.transform.position - Vector3.forward, Quaternion.identity).GetComponent<BombEntity>();
+                    bomb.gameObject.SetActive(false);
+                    optimumBombsList.Add(bomb);
 
                     for (var j = 0; j < cellWithMaximumNeighbor.neighborCellsList.Count; j++)
                     {
@@ -280,12 +324,36 @@ namespace _Game.Scripts
             minimumBombCount += 2;
         }
 
-        private void DebugOptimumBomb(Vector3 position)
+        private void DebugOptimumBomb()
         {
-            BombEntity bomb = Instantiate(bombPrefab,
-                    position - Vector3.forward, Quaternion.identity).GetComponent<BombEntity>();
-            bomb.gameObject.SetActive(true);
-            optimumBombsList.Add(bomb);
+            for (var i = 0; i < optimumBombsList.Count; i++)
+            {
+                optimumBombsList[i].gameObject.SetActive(showOptimumBombs);
+            }
+        }
+
+        private void OnDropBomb(CellEntity cell)
+        {
+            if (!cell.isUsed)
+            {
+                if (droppedBombCount != minimumBombCount)
+                {
+                    droppedBombCount++;
+                    BombEntity bomb = Instantiate(bombPrefab,
+                        cell.transform.position - Vector3.forward, Quaternion.identity).GetComponent<BombEntity>();
+                    bomb.currentCell = cell;
+                    droppedBombsList.Add(bomb);
+                    bombCountTMP.text = (minimumBombCount - droppedBombCount).ToString();
+
+                    if (cell.isOptimumPointForBomDrop)
+                    {
+                        bomb.isInOptimumCell = true;
+                    }
+                
+                    cell.isUsed = true;
+                    Debug.Log("Drop bomb");
+                }
+            }
         }
     }
 }

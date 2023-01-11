@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 9038325911509762099}
   - component: {fileID: 1222913922469357771}
   - component: {fileID: 3234243879912796301}
+  - component: {fileID: 7390729096242777214}
   m_Layer: 0
   m_Name: Cell
   m_TagString: Untagged
@@ -27,7 +28,7 @@ Transform:
   m_GameObject: {fileID: 5879688002533837517}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0, y: 0, z: 0}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -98,4 +99,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   isUsed: 0
+  isUsedForCalculation: 0
   neighborCellsList: []
+--- !u!65 &7390729096242777214
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5879688002533837517}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Size: {x: 2.93, y: 2.93, z: 0.2}
+  m_Center: {x: 0, y: 0, z: 0}
