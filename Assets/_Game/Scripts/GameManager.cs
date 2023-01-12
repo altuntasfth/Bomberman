@@ -18,6 +18,7 @@ namespace _Game.Scripts
         public bool isGameStarted;
         public bool isGameOver;
         public bool showOptimumBombs;
+        public Toggle debugBombsToggle;
         
         [SerializeField] private BaseLevelDataSO baseLevelData;
         [SerializeField] private Transform gridsParent;
@@ -73,6 +74,12 @@ namespace _Game.Scripts
             
             data = SaveLoadManager.Instance.Load();
             starsWonPreviousGameplay = data.allLevelsData[levelIndex].earnedStarsCount;
+            
+            debugBombsToggle.onValueChanged.AddListener((bool value) =>
+            {
+                showOptimumBombs = value;
+                DebugOptimumBomb();
+            });
         }
         
         private void Start()
