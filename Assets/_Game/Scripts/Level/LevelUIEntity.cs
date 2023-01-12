@@ -29,14 +29,17 @@ namespace _Game.Scripts.Level
             normalizedLevelIndex = levelData.levelIndex + 1;
             
             levelHeaderTMP.text = "LEVEL-" + normalizedLevelIndex.ToString();
-            
-            playButton.onClick.AddListener(() =>
+
+            if (levelData.isReadyToPlay)
             {
-                PlayerPrefs.SetInt("ActiveLevelIndex", levelData.levelIndex);
-                PlayerPrefs.Save();
+                playButton.onClick.AddListener(() =>
+                {
+                    PlayerPrefs.SetInt("ActiveLevelIndex", levelData.levelIndex);
+                    PlayerPrefs.Save();
                 
-                SceneManager.LoadScene("GameplayScene");
-            });
+                    SceneManager.LoadScene("GameplayScene");
+                });
+            }
             
             for (var i = 0; i < levelData.earnedStarsCount; i++)
             {
