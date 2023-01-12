@@ -87,7 +87,7 @@ namespace _Game.Scripts
             GetLevelDataFromResources();
             GetLevelDataRowAndColumnCount();
             
-            mainCamera.orthographicSize = columnCount * 3;
+            mainCamera.orthographicSize = columnCount * 3 + 2;
             
             WriteLevelDataToMatrix();
             GenerateGrids();
@@ -148,8 +148,9 @@ namespace _Game.Scripts
         
         private void GetLevelDataFromResources()
         {
-            string path = baseLevelData.levelsPath + normalizedLevelIndex.ToString();
-            levelDataAsString = File.ReadAllText(path);
+            string path = "Levels/LS_Case_Level-" + normalizedLevelIndex;
+            var txt = Resources.Load(path);
+            levelDataAsString = txt.ToString();
         }
         
         /*private IEnumerator GetLevelDataFromServer()

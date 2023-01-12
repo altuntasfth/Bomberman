@@ -7,7 +7,6 @@ namespace _Game.Scripts.Level
     [CreateAssetMenu(fileName = "BaseLevel", menuName = "Level/Create Level Data")]
     public class BaseLevelDataSO : ScriptableObject
     {
-        public string levelsPath = "Assets/_Game/Resources/Levels/LS_Case_Level-";
         public int totalLevelCount = 20;
     }
 

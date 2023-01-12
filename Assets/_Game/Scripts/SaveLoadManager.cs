@@ -13,6 +13,8 @@ namespace _Game.Scripts
         public static SaveLoadManager Instance;
         public const string fileName = "/levelsData.dat";
 
+        private string path;
+
         private void Awake()
         {
             if (Instance != null && Instance != this) 
@@ -23,12 +25,15 @@ namespace _Game.Scripts
             { 
                 Instance = this; 
             }
+
+            path = DataPath();
+            Debug.Log(path);
         }
 
         public void Save(AllLevelsData data, LevelData levelData, int levelNumber)
         {
             BinaryFormatter bf = new BinaryFormatter();
-            FileStream file = File.Create(Application.persistentDataPath + fileName);
+            FileStream file = File.Create(path);
 
             if (levelNumber < data.allLevelsData.Count)
             {
@@ -47,10 +52,10 @@ namespace _Game.Scripts
         {
             AllLevelsData allLevelsData = null;
             
-            if (File.Exists(Application.persistentDataPath + fileName))
+            if (File.Exists(path))
             {
                 BinaryFormatter bf = new BinaryFormatter();
-                FileStream file = File.Open(Application.persistentDataPath + fileName, FileMode.Open);
+                FileStream file = File.Open(path, FileMode.Open);
 
                 allLevelsData = (AllLevelsData)bf.Deserialize(file);
                 file.Close();
@@ -62,7 +67,7 @@ namespace _Game.Scripts
         public void SaveInitializedData(AllLevelsData data)
         {
             BinaryFormatter bf = new BinaryFormatter();
-            FileStream file = File.Create(Application.persistentDataPath + SaveLoadManager.fileName);
+            FileStream file = File.Create(path);
             
             bf.Serialize(file, data);
             file.Close();
@@ -72,12 +77,22 @@ namespace _Game.Scripts
 
         public void DeleteFile()
         {
-            if (File.Exists(Application.persistentDataPath + fileName))
+            if (File.Exists(path))
             {
-                File.Delete(Application.persistentDataPath + fileName);
+                File.Delete(path);
             }
 
             SceneManager.LoadScene("MenuScene");
+        }
+        
+        private string DataPath()
+        {
+            if (Directory.Exists(Application.persistentDataPath))
+            {
+                return Path.Combine(Application.persistentDataPath + fileName);
+            }
+            
+            return Path.Combine(Application.streamingAssetsPath + fileName);
         }
     }
 }
