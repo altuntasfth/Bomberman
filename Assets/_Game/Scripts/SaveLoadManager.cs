@@ -4,6 +4,7 @@ using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using _Game.Scripts.Level;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace _Game.Scripts
 {
@@ -56,6 +57,27 @@ namespace _Game.Scripts
             }
 
             return allLevelsData;
+        }
+        
+        public void SaveInitializedData(AllLevelsData data)
+        {
+            BinaryFormatter bf = new BinaryFormatter();
+            FileStream file = File.Create(Application.persistentDataPath + SaveLoadManager.fileName);
+            
+            bf.Serialize(file, data);
+            file.Close();
+            
+            Debug.Log("Initialize Data");
+        }
+
+        public void DeleteFile()
+        {
+            if (File.Exists(Application.persistentDataPath + fileName))
+            {
+                File.Delete(Application.persistentDataPath + fileName);
+            }
+
+            SceneManager.LoadScene("MenuScene");
         }
     }
 }

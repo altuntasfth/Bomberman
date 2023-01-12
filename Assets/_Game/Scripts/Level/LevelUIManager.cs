@@ -5,6 +5,7 @@ using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using UnityEngine;
 using UnityEngine.Networking;
+using UnityEngine.UI;
 
 namespace _Game.Scripts.Level
 {
@@ -13,6 +14,7 @@ namespace _Game.Scripts.Level
         [SerializeField] private BaseLevelDataSO baseLevelData;
         [SerializeField] private GameObject levelUIPrefab;
         [SerializeField] private Transform levelUIContentParent;
+        [SerializeField] private Button deleteFileButton;
 
         private int normalizedLevelIndex;
         private int[,] levelDataMatrix;
@@ -21,6 +23,11 @@ namespace _Game.Scripts.Level
         {
             InitializeLevelsData();
             CreateLevelUIs();
+
+            deleteFileButton.onClick.AddListener(() =>
+            {
+                SaveLoadManager.Instance.DeleteFile();
+            });
         }
 
         private void CreateLevelUIs()
@@ -60,19 +67,8 @@ namespace _Game.Scripts.Level
                     data.allLevelsData.Add(levelData);
                 }
                 
-                SaveInitializedData(data);
+                SaveLoadManager.Instance.SaveInitializedData(data);
             }
-        }
-        
-        private void SaveInitializedData(AllLevelsData data)
-        {
-            BinaryFormatter bf = new BinaryFormatter();
-            FileStream file = File.Create(Application.persistentDataPath + SaveLoadManager.fileName);
-            
-            bf.Serialize(file, data);
-            file.Close();
-            
-            Debug.Log("Initialize Data");
         }
     }
 }

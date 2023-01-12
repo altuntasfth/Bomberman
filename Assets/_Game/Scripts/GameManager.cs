@@ -36,9 +36,10 @@ namespace _Game.Scripts
 
         private int droppedBombCount;
         private int earnedStarsCount;
+        private int starsWonPreviousGameplay;
         private int levelIndex;
         private int normalizedLevelIndex;
-        public string levelData;
+        public string levelDataAsString;
         private int[,] levelDataMatrix;
         private Grid[,] gridsDataMatrix;
         private List<CellEntity> cellsList;
@@ -71,6 +72,7 @@ namespace _Game.Scripts
             levelTMP.text = "Level-" + normalizedLevelIndex.ToString();
             
             data = SaveLoadManager.Instance.Load();
+            starsWonPreviousGameplay = data.allLevelsData[levelIndex].earnedStarsCount;
         }
         
         private void Start()
@@ -140,7 +142,7 @@ namespace _Game.Scripts
         private void GetLevelDataFromResources()
         {
             string path = baseLevelData.levelsPath + normalizedLevelIndex.ToString();
-            levelData = File.ReadAllText(path);
+            levelDataAsString = File.ReadAllText(path);
         }
         
         /*private IEnumerator GetLevelDataFromServer()
@@ -167,9 +169,9 @@ namespace _Game.Scripts
         
         private void GetLevelDataRowAndColumnCount()
         {
-            for (int i = 0; i < levelData.Length; i++)
+            for (int i = 0; i < levelDataAsString.Length; i++)
             {
-                char letter = levelData[i];
+                char letter = levelDataAsString[i];
                 if (letter == '\n')
                 {
                     if (columnCount == 0)
@@ -192,7 +194,7 @@ namespace _Game.Scripts
             {
                 for (int j = 0; j < columnCount; j++)
                 {
-                    levelDataMatrix[i, j] = levelData[index] - '0';
+                    levelDataMatrix[i, j] = levelDataAsString[index] - '0';
                     index += 2;
                 }
             }
@@ -391,10 +393,18 @@ namespace _Game.Scripts
                 bomb.Explode();
             }
             
-            earnedStarsCount = minimumBombCount - droppedBombCount + 1;
             showOptimumBombs = false;
             DebugOptimumBomb();
-            SaveCompletedLevelData();
+
+            earnedStarsCount = minimumBombCount - droppedBombCount + 1;
+            if (minimumBombCount - droppedBombCount + 1 > data.allLevelsData[levelIndex].earnedStarsCount)
+            {
+                SaveCompletedLevelData();
+                SetReadyToPlayNextLevel();
+                UpdateMultiplesOfFiveLevelsData();
+            }
+
+            Debug.Log("Earned stars count is: " + earnedStarsCount);
 
             DOVirtual.DelayedCall(1f, () =>
             {
@@ -467,20 +477,51 @@ namespace _Game.Scripts
 
         private void SaveCompletedLevelData()
         {
-            LevelData levelData = new LevelData()
-            {
-                levelIndex = levelIndex,
-                earnedStarsCount = earnedStarsCount,
-                isReadyToPlay = true,
-            };
+            LevelData levelData = data.allLevelsData[levelIndex];
+            levelData.earnedStarsCount = earnedStarsCount;
 
             data = SaveLoadManager.Instance.Load();
             SaveLoadManager.Instance.Save(data, levelData, levelIndex);
         }
 
-        private void UpdateOtherLevelsData()
+        private void SetReadyToPlayNextLevel()
         {
-            //TODO: update all levels data
+            int nextLevelIndex = levelIndex + 1;
+            if (nextLevelIndex < baseLevelData.totalLevelCount && data.allLevelsData[levelIndex].earnedStarsCount != 0)
+            {
+                LevelData nextLevelData = data.allLevelsData[nextLevelIndex];
+                nextLevelData.isReadyToPlay = true;
+                
+                SaveLoadManager.Instance.Save(data, nextLevelData, nextLevelIndex);
+            }
+        }
+
+        private void UpdateMultiplesOfFiveLevelsData()
+        {
+            if (levelIndex + 1 <= baseLevelData.totalLevelCount)
+            {
+                data = SaveLoadManager.Instance.Load();
+                
+                for (var i = 1; i <= data.allLevelsData.Count; i++)
+                {
+                    LevelData levelData = data.allLevelsData[i - 1];
+
+                    if (i % 5 == 0 && levelData.progressBarEarnedStarsCount < levelData.progressBarNeededStarsCount &&
+                        starsWonPreviousGameplay < earnedStarsCount)
+                    {
+                        levelData.progressBarEarnedStarsCount = Mathf.Clamp(
+                            levelData.progressBarEarnedStarsCount + earnedStarsCount - starsWonPreviousGameplay,
+                            0, levelData.progressBarNeededStarsCount);
+
+                        if (levelData.isReadyToPlay && levelData.progressBarEarnedStarsCount != levelData.progressBarNeededStarsCount)
+                        {
+                            levelData.isReadyToPlay = false;
+                        }
+                        
+                        SaveLoadManager.Instance.Save(data, levelData, i - 1);
+                    }
+                }
+            }
         }
     }
 }

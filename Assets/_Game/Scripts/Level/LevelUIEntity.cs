@@ -49,13 +49,20 @@ namespace _Game.Scripts.Level
             
             if (normalizedLevelIndex % 5 == 0)
             {
-                progressBarParent.SetActive(true);
+                if (levelData.earnedStarsCount == 0)
+                {
+                    progressBarParent.SetActive(true);
+                }
+                else
+                {
+                    starsParent.SetActive(true);
+                }
                 progressBarInfoTMP.text = levelData.progressBarEarnedStarsCount.ToString() + "/" +
                                           levelData.progressBarNeededStarsCount.ToString();
                 
                 Vector2 initialSizeDelta = progressBarFillImageTransform.sizeDelta;
                 float sizeX = initialSizeDelta.x / levelData.progressBarNeededStarsCount *
-                              levelData.progressBarEarnedStarsCount;
+                              Mathf.Clamp(levelData.progressBarEarnedStarsCount, 0, levelData.progressBarNeededStarsCount);
                 progressBarFillImageTransform.sizeDelta = sizeX * Vector2.right + initialSizeDelta.y * Vector2.up;
             }
             else
